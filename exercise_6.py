@@ -23,6 +23,7 @@
 # 	3. Полученный DataFrame обогатить доп. столбцом:
 # 		"load_dt" -> значение "сейчас"(датавремя)
 from datetime import datetime, date
+from typing import Union
 
 import requests as req
 from pydantic import BaseModel
@@ -30,27 +31,65 @@ from pandas import DataFrame
 
 
 class Response(BaseModel):
-	Columns: list[str]
-	Description: str
-	RowCount: int
-	Rows: list[list[int, datetime, str]]\
-	
+    Columns: list[str]
+    Description: str
+    RowCount: int
+    Rows: list[list[Union[int, datetime, str]]]
+
+
+# Из условия я понял что надо валидировать значение не полей 'key' из Column, а соответствующие им поля в Rows (т.к.)/
+# в строках храняться сами данные, а в Columns - ключи.
+# В отдельную функцию вынес валидацию данных в каждой строке, т.к. с помощью аннотации типов,
+# которую воспринимает pydantic, смог задать только ограничения на тип данных во ВСЕХ ячейках списка сразу.
+def parse_row(row: list) -> list[Union[int, datetime, str]]:
+    try:
+        field_1 = int(row[0])
+    except ValueError:
+        raise ValueError('error in rows validation. row[0] must be int.')
+
+    try:
+        field_2 = datetime.fromisoformat(row[1])
+    except ValueError:
+        raise ValueError('error in rows validation. row[1] must be datetime.')
+
+    try:
+        field_3 = str(row[2])
+    except ValueError:
+        raise ValueError('error in rows validation. row[2] must be str.')
+
+    return [field_1, field_2, field_3]
+
 
 def main():
-	documents_date = datetime.fromisoformat(date.today().isoformat()).timestamp()
-	response = req.get(url=f'https://api.gazprombank.ru/very/important/docs?documents_date={documents_date}')
-	
-	# Мапимся на модель, валидируя ВСЕ данные ответа. Не понял из ТЗ, мапить всё или только важные данные.
-	response = Response.model_validate_json(response.json())
-	
-	important_data = DataFrame(
-		document_id=[response.Rows[i][0] for i in range(len(response.Rows))],
-		document_dt=[response.Rows[i][1] for i in range(len(response.Rows))],
-		document_name=[response.Rows[i][2] for i in range(len(response.Rows))],
-	)
-	
-	important_data.update(load_dt=datetime.now())
-	
-	
+    documents_date = datetime.fromisoformat(date.today().isoformat()).timestamp()
+    # Не могу получить данные по этому url, он точно рабочий? Какими только способами не пытался...
+    # Продолжаю, считая что получил.
+    # response = req.get(url=f'https://api.gazprombank.ru/very/important/docs?documents_date={documents_date}')
+    # response = response.json()			# ОТВЕТ: полечение данных в запросе
+
+    # Замокал ответ вручную :)
+    response = {
+        "Columns": ["key1", "key2", "key3"],
+        "Description": "Банковское API каких-то важных документов",
+        "RowCount": 2,
+        "Rows": [
+            [123, "2024-05-24", "value3"],
+            [456, "2024-05-24", "value6"]
+        ]
+    }
+    # Мапимся на модель, валидируя ВСЕ данные ответа. Не понял из ТЗ, мапить всё или только важные данные.
+    response = Response(Rows=[parse_row(row) for row in response.pop("Rows")], **response)	# ОТВЕТ: валидация данных
+
+    print(response)
+
+    important_data = DataFrame(response.Rows, columns=response.Columns)			# ОТВЕТ: представление в виде DataFrame
+
+    important_data.columns = ['document_id', 'document_dt', 'document_name']	# ОТВЕТ: переименование columns
+
+    important_data['load_dt'] = [datetime.now() for _ in range(len(response.Rows))]
+
+    print(important_data)					# ОТВЕТ: дополненный DataFrame
+
+
 if __name__ == "__main__":
-	main()
+    main()
