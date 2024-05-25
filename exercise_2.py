@@ -9,6 +9,7 @@ m = [{11, 3, 5}, {2, 17, 87, 32}, {4, 44}, {24, 11, 9, 7, 8}]
 #  4. собрать все множества в один кортеж
 # *написать решения в одну строку"""
 from functools import reduce
+from itertools import chain
 
 
 def main():
@@ -20,10 +21,11 @@ def main():
 	sum_of_nums = sum(sum(s) for s in m)  		# ОТВЕТ: Общая сумма чисел
 	print(sum_of_nums)
 	
-	avr_of_nums = sum(sum(s) for s in m) / sum(len(s) for s in m)	# ОТВЕТ: Среднее значение (sum_of_nums / sum_length)
+	avr_of_nums = sum_of_nums / sum_length	# ОТВЕТ: Среднее значение (sum_of_nums / sum_length)
 	print(avr_of_nums)
 
 	sum_tuple = reduce(lambda x, y: x + y, (tuple(s) for s in m))	# ОТВЕТ: Один кортеж из всех чисел
+	sum_tuple = tuple(chain(*m))									# ОТВЕТ: Один кортеж из всех чисел (2 вариант)
 	print(sum_tuple)
 
 

@@ -2,12 +2,11 @@
 # Имеется папка с файлами
 # Реализовать удаление файлов старше N дней"""
 
-import os
 from datetime import datetime
 from pathlib import Path
 
 
-def removing_old_files(path: str | Path, N: int):
+def removing_old_files(path: Path, N: int):
     """
     Функция для удаления файлов старше указанного количества дней.
     :param path: Путь для удаления файлов.
@@ -15,18 +14,16 @@ def removing_old_files(path: str | Path, N: int):
     :return: None.
     """
     time_now = datetime.now().date()
-    os.chdir(path)
-    for file in os.listdir():
-        file_created = datetime.fromtimestamp(os.path.getctime(file)).date()
+    for file in path.iterdir():
+        file_created = datetime.fromtimestamp(file.stat().st_ctime).date()
         if (time_now - file_created).days > N:
-            os.remove(file)
-
-    os.chdir(Path(__file__).parent)				# Возвращение в родную директорию файла (на всякий случай)
+            file.unlink()
 
 
 def main():
     path = 'example_dir'
     N = 10
+    path = Path.cwd() / path
     removing_old_files(path=path, N=N)
 
 

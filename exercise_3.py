@@ -14,7 +14,7 @@ def main():
 	
 	b = [{'k1': 1, 'k2': 2, 'k3': 3}, {'k1': 4, 'k2': 5, 'k3': 6}]
 	
-	ans = [dict(((f'k{index + 1}', value) for index, value in enumerate(l))) for l in a]	# ОТВЕТ
+	ans = [dict(((f'k{index + 1}', value) for index, value in enumerate(outer_list))) for outer_list in a]	# ОТВЕТ
 	print(ans)
 
 	assert ans == b

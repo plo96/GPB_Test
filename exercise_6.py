@@ -30,34 +30,17 @@ from pydantic import BaseModel
 from pandas import DataFrame
 
 
+class Row(BaseModel):
+    key1: int
+    key2: datetime
+    key3: str
+
+
 class Response(BaseModel):
     Columns: list[str]
     Description: str
     RowCount: int
-    Rows: list[list[Union[int, datetime, str]]]
-
-
-# Из условия я понял что надо валидировать значение не полей 'key' из Column, а соответствующие им поля в Rows (т.к.)/
-# в строках храняться сами данные, а в Columns - ключи.
-# В отдельную функцию вынес валидацию данных в каждой строке, т.к. с помощью аннотации типов,
-# которую воспринимает pydantic, смог задать только ограничения на тип данных во ВСЕХ ячейках списка сразу.
-def validate_row(row: list) -> list[Union[int, datetime, str]]:
-    try:
-        field_1 = int(row[0])
-    except ValueError:
-        raise ValueError('error in rows validation. row[0] must be int.')
-
-    try:
-        field_2 = datetime.fromisoformat(row[1])
-    except ValueError:
-        raise ValueError('error in rows validation. row[1] must be datetime.')
-
-    try:
-        field_3 = str(row[2])
-    except ValueError:
-        raise ValueError('error in rows validation. row[2] must be str.')
-
-    return [field_1, field_2, field_3]
+    Rows: list[Row]
 
 
 def main():
@@ -77,10 +60,16 @@ def main():
             [456, "2024-05-24", "value6"]
         ]
     }
-    # Мапимся на модель, валидируя ВСЕ данные ответа. Не понял из ТЗ, мапить всё или только важные данные.
-    response = Response(Rows=[validate_row(row) for row in response.pop("Rows")], **response)  # ОТВЕТ: валидация данных
 
-    print(response)
+    # Приводим список Rows в response, содержащий списки со значениями, к словарю, чтобы можно было валидировать через pydantic
+    rows_dicts: list[dict] = []
+    for row in response.pop("Rows"):
+        row_dict = {response["Columns"][i]: row[i] for i in range(len(response["Columns"]))}
+        rows_dicts.append(row_dict)
+    response["Rows"] = rows_dicts
+
+    # Мапимся на модель, валидируя ВСЕ данные ответа. Не понял из ТЗ, мапить всё или только важные данные.
+    response = Response(**response)             # ОТВЕТ: валидация данных
 
     important_data = DataFrame(response.Rows, columns=response.Columns)  # ОТВЕТ: представление в виде DataFrame
 

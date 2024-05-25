@@ -34,11 +34,10 @@
 
 def get_similar_letter_number(first_word: str, second_word: str) -> int:
 	"""Возвращает число общих букв в конце первого слова и в начале второго."""
-	searched_number: int = 0
-	for word_part_size in range(1, min(len(first_word), len(second_word)))[::-1]:
+	min_word_length = min(len(first_word), len(second_word))
+	for word_part_size in range(min_word_length, 0, -1):
 		if first_word.endswith(second_word[:word_part_size]):
-			searched_number = word_part_size
-			return searched_number
+			return word_part_size
 	return 0
 
 
@@ -56,6 +55,8 @@ def get_double_words(file_name: str, first_word: str) -> list[str] | None:
 	
 	answer: list = []
 	for word in words:
+		if first_word == word:				# два одинаковых слова не дают новое, хотя и имеют общие буквы
+			continue
 		similar_letter_number = get_similar_letter_number(first_word, word)
 		if similar_letter_number > 0:
 			answer.append(f'{first_word[:-similar_letter_number]}{word}')
